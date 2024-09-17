@@ -1,25 +1,59 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h1>Transactions</h1>
-<table class="striped">
-    <thead>
-        <tr><th>Date</th><th>Payment Method</th><th>Amount</th></tr>
-    </thead>
-    <tbody>
-        {% for transaction in transactions %}
-            <tr>
-                <td>{{transaction.date}}</td>
-                <td>{{transaction.get_payment_method_display}}</td>
-                <td>{{transaction.amount}}</td>
-                <td>{{transaction.booking}}</td>
-                <td><a href="{% url 'transaction_update' transaction.id %}">Update Transaction</a></td>
-                <td><a href="{% url 'transaction_delete' transaction.id %}">Delete Transaction</a></td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<a href="{% url 'transaction_create' %}">New Transaction</a>
+<h1 style="display: inline-block;">Transactions</h1>
+
+<lottie-player 
+      src="../../../static/images/transaction.json"
+      background="transparent"
+      speed="1"
+      style="width: 66px;
+      position: relative;
+      top: 21px;
+      display: inline-block;"
+      loop
+      autoplay>
+      </lottie-player>
+<hr/>
+<div class="col grid-margin stretch-card">
+    <div class="card" id="transaction-card">
+        <div class="card-body">
+            <h4 class="card-title"></h4>
+            <div class="table-responsive">
+                <table class="table" id="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Payment</th>
+                            <th>Amount</th>
+                            <th>Booking Info</th>
+                            <th>Update</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transaction %}
+                            <tr>
+                                <td>{{transaction.date}}</td>
+                                <td>{{transaction.get_payment_method_display}}</td>
+                                <td>{{transaction.amount}}</td>
+                                <td>{{transaction.booking}}</td>
+                                <td><a href="{% url 'transaction_update' transaction.id %}" class="transaction-icon"><i class='far fa-edit' style='font-size:24px'></i>
+                                </a></td>
+                                <td><a href="{% url 'transaction_delete' transaction.id %}" class="transaction-icon"><i class='far fa-trash-alt' style='font-size:24px'></i></a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div><h2>Total Amount Earned: <strong>${{transaction_total}}</strong></h2></div>
+            </div>
+        </div>
+    </div>
+</div>
+<hr>
+<a href="{% url 'bookings' %}" class="btn booking-button"><i class='far fa-caret-square-left' style='font-size:24px'></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BACK TO BOOKINGS</a>
+
+
 
 
 {% endblock %}

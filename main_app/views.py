@@ -1,9 +1,9 @@
 import os
-from re import L
 import uuid
 import boto3
 from datetime import date
 from django.shortcuts import render, redirect
+from django.http import HttpResponseRedirect
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import ListView, DetailView
 from .models import Equipment, Booking, Photo, Transaction, Profile, User
@@ -12,12 +12,24 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .forms import EquipmentForm
+from django.db.models import Sum
 # Create your views here.
 
 
 @login_required
 def add_photo(request, photographer_id):
+    """
+    Function to upload photo from user to AWS S3 Bucket.
+
+    ``Models Related``
+
+    Photo: :model:`main_app.Photo`
+
+    User: :model:`auth.User`
+
+    """
     photo_file = request.FILES.get('photo-file', None)
     if photo_file:
         s3 = boto3.client('s3')
@@ -31,10 +43,21 @@ def add_photo(request, photographer_id):
             Photo.objects.create(url=url, user_id=photographer_id, name=key)
         except:
             print('An error occurred uploading file to S3')
-    return redirect('portfolio')
-
+    return HttpResponseRedirect(f'/portfolio/{photographer_id}')
 
 def signup(request):
+    """
+    User sign up page
+
+    **Template**
+
+    :template:`main_app/registration/signupm.html`
+
+    **URL**
+
+    http://localhost:8000/accounts/signup/
+    
+    """
     error_message = ''
     if request.method == 'POST':
         # This is how to create a 'user' form object
@@ -54,31 +77,52 @@ def signup(request):
     return render(request, 'registration/signup.html', context)
 
 
-@login_required
-def home(request):
-    """
-    home view
-    http://localhost:8000/
-    """
-    return render(request, 'home.html')
-
-
 def photographers(request):
     """
-    photographers view
-    http://localhost/8000/photographers/
-    """
-    # profiles = Profile.objects.all()
+    Displays all photographers on application. 
 
+    ``Models Related``
+
+    User: :model:`auth.User`
+
+    **Template**
+
+    :template:`main_app/photographers.html`
+
+    **URL**
+
+    http://localhost/8000/photographers/
+
+    """
     users = User.objects.all()
-    print("---------",users[0].profile.id)
+    page = request.GET.get('page', 1)
+    paginator = Paginator(users, 4)
+    try:
+        users = paginator.page(page)
+    except PageNotAnInteger:
+        users = paginator.page(1)
+    except EmptyPage:
+        users = paginator.page(paginator.num_pages)
     return render(request, 'photographers.html', {'users': users})
 
 
 @login_required
 def bookings(request):
     """
+    Displays all bookings for current user
+
+    ``Models Related``
+
+    Booking: :model:`main_app.Booking`
+
+    **Template**
+
+    :template:`main_app/bookings/index.html`
+
+    **URL**
+
     http://localhost/8000/bookings/
+
     """
     today = date.today()
     bookings = Booking.objects.filter(user=request.user)
@@ -88,46 +132,111 @@ def bookings(request):
 @login_required
 def equipment(request):
     """
+    Displays all equipment the user does and does not have
+
+    ``Models Related``
+
+    Equipment: :model:`main_app.Equipment`
+
+    **Template**
+
+    :template:`main_app/equipment.html`
+
+    **URL**
     http://localhost/8000/equipment/
+
     """
-    print('HELLO', request.user.profile.id)
     assoc_equipments = Equipment.objects.filter(profile=request.user.profile.id)
     gear_user_doesnt_have = Equipment.objects.exclude(id__in = assoc_equipments.all().values_list('id'))
-    print(assoc_equipments)
     return render(request, 'equipment.html',  {'equipments': gear_user_doesnt_have, 'assoc_equipments': assoc_equipments})
 
 
 
 def portfolio(request, profile_id):
     """
+    Displays all photos belonging to photographer
+
+    ``Models Related``
+
+    Photo :model:`main_app.Photo`
+
+    **Template**
+
+    :template:`main_app/portfolio.html`
+
     http://localhost/8000/portfolio/
+
     """
+    profile_user = User.objects.get(id=profile_id)
+    photos = Photo.objects.filter(user=profile_id).order_by('-created_at')
     
-    photos = Photo.objects.filter(user=profile_id)
-    return render(request, 'portfolio.html', {'photos': photos})
+    page = request.GET.get('page', 1)
+    paginator = Paginator(photos, 6)
+    try:
+        photos = paginator.page(page)
+    except PageNotAnInteger:
+        photos = paginator.page(1)
+    except EmptyPage:
+        photos = paginator.page(paginator.num_pages)
+    return render(request, 'portfolio.html', {'photos':photos, 'profile_id': profile_id, "profile_user":profile_user})
 
 
 @login_required
 def booking(request, booking_id):
     """
-    single booking view
+    Displays single booking belonging to photographer
+
+    ``Models Related``
+
+    Booking: :model:`main_app.Booking`
+
+    **Template**
+
+    :template:`main_app/bookings/booking_detail.html`
+
+    *URL*
+
     http://localhost/8000/portfolio/
+
     """
     today = date.today()
     booking = Booking.objects.get(id=booking_id)
-    return render(request, 'bookings/booking_detail.html', {'booking': booking, 'today': today})
+
+    try:
+        booking.transaction
+        no_transaction = True
+        return render(request, 'bookings/booking_detail.html', {'booking': booking, 'today': today, 'no_transaction': no_transaction})
+    except:
+        no_transaction = False
+        return render(request, 'bookings/booking_detail.html', {'booking': booking, 'today': today, 'no_transaction': no_transaction})
 
 
 @login_required
 def transactions(request):
     """
-    transactions view
+    Displays transactions made by photographer
+
+    ``Models Related``
+
+    Transaction: :model:`main_app.Transaction`
+    
+    Booking: :model:`main_app.Booking`
+
+    **Template**
+
+    :template:`main_app/transactions.html`
+
+    **URL**
+
     http://localhost/8000/transactions/
+
     """
     bookings = Booking.objects.filter(user=request.user)
     bookings_list = list(bookings)
-    transactions = Transaction.objects.filter(booking__in=bookings_list)
-    return render(request, 'transactions.html', {'transactions': transactions})
+    transaction = Transaction.objects.filter(booking__in=bookings_list)
+    transaction_total = transaction.aggregate(Sum('amount')).get('amount__sum',0.00) if transaction else 0
+    print(transaction_total)
+    return render(request, 'transactions.html', {'transaction': transaction, 'transaction_total': transaction_total})
 
 
 @login_required
@@ -139,21 +248,23 @@ def profile(request):
 
 @login_required
 def assoc_equipment(request, equipment_id):
-  print('!!!!_------!!!!-----THIS', request.user.profile.id, equipment_id)
-  print(request.user.profile.equipments)
   Profile(id=request.user.profile.id).equipments.add(equipment_id)
   return redirect('equipment')
 
 @login_required
 def unassoc_equipment(request, equipment_id):
-  print('!!!!_------!!!!-----THIS', request.user.profile.id, equipment_id)
   Profile(id=request.user.profile.id).equipments.remove(equipment_id)
   return redirect('equipment')
 
+
 class TransactionCreate(LoginRequiredMixin, CreateView):
     model = Transaction
-    fields = '__all__'
-
+    fields = ['payment_method', 'amount', 'date', 'paid']
+    
+    def form_valid(self, form):
+        form.instance.booking_id = self.kwargs['booking_pk']
+        return super().form_valid(form)
+    
 
 class TransactionUpdate(LoginRequiredMixin, UpdateView):
     model = Transaction
@@ -176,7 +287,6 @@ class EquipmentCreate(LoginRequiredMixin, CreateView):
     success_url = '/equipment/'
 
 
-
 class EquipmentUpdate(LoginRequiredMixin, UpdateView):
     model = Equipment
     fields = ['model']
@@ -192,7 +302,6 @@ class BookingCreate(LoginRequiredMixin, CreateView):
     # take user field out because it is being attached when they click on the form (lines 176-178)
     fields = ['date', 'location', 'customer_name', 'phone_number', 'comment']
     success_url = '/bookings/'
-
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)
@@ -202,7 +311,11 @@ class BookingUpdate(LoginRequiredMixin, UpdateView):
     model = Booking
     fields = ['date', 'location', 'customer_name', 'phone_number', 'comment']
 
-
 class BookingDelete(LoginRequiredMixin, DeleteView):
     model = Booking
     success_url = '/bookings/'
+
+class ProfileUpdate(LoginRequiredMixin, UpdateView):
+    model = Profile
+    fields = ['name', 'email', 'facebook', 'linkedin', 'instagram']
+    success_url = '/photographers/' 

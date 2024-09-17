@@ -1,13 +1,24 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <h1>Delete Transaction</h1>
-
+  <h1 style="display: inline-block;">Delete Transaction</h1>
+  <lottie-player 
+  src="../../../static/images/transaction.json"
+  background="transparent"
+  speed="1"
+  style="width: 66px;
+  position: relative;
+  top: 21px;
+  display: inline-block;"
+  loop
+  autoplay>
+  </lottie-player>
+<hr/>
   <h4>Are you sure you want to delete <span class="teal-text">{{ object.name }}</span>?</h4>
 
   <form action="" method="POST">
     {% csrf_token %}
-    <input type="submit" value="Yes - Delete!" class="btn">
-    <a href="{% url 'transactions' %}">Cancel</a>
+    <input type="submit" value="Yes - Delete!" class="btn btn-danger">
+    <a href="{% url 'transactions' %}"><button class="btn btn-warning">Cancel</button></a>
   </form>
 {% endblock %}

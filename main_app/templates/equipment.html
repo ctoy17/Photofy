@@ -1,39 +1,75 @@
 {% extends 'base.html' %}
 {% block content %}
+<h1 style="display: inline-block;">Equipment</h1>
 
-<h1>Gear</h1>
-<div class="row">
-    <div class="col s6">
-        {% if assoc_equipments.count %}
-            {% for assoc_equipment in assoc_equipments %}
-                <div> 
-                    <form action="{% url 'unassoc_equipment' assoc_equipment.id %}" method="post">
-                        {% csrf_token %}
-                        <a href="{% url 'unassoc_equipment' assoc_equipment.id %}" class="list-group-item list-group-item-action list-group-item-success">{{ assoc_equipment.get_type_display }} {{ assoc_equipment.model }}</a>
-                    </form>
+<lottie-player 
+      src="../../../static/images/equipment.json"
+      background="transparent"
+      speed="1"
+      style="width: 66px;
+      position: relative;
+      top: 21px;
+      display: inline-block;"
+      loop
+      autoplay>
+      </lottie-player>
+
+
+<hr/>
+<div class="container-fluid">
+    <div class="row justify-content-around">
+
+        <div class="col-4">
+            <div class="col grid-margin stretch-card">
+                <div class="card" id="booking-card">
+                    <div class="card-body">
+                        <h1>My Equipment</h1>
+                        <hr>
+                        {% if assoc_equipments.count %}
+                            {% for assoc_equipment in assoc_equipments %}
+                                <div> 
+                                    <form action="{% url 'unassoc_equipment' assoc_equipment.id %}" method="post">
+                                        {% csrf_token %}
+                                        <a href="{% url 'unassoc_equipment' assoc_equipment.id %}" class="list-group-item list-group-item-action my-equip-btn">{{ assoc_equipment.get_type_display }} {{ assoc_equipment.model }} 	<i class="fa fa-close" style="float: right"></i></a>
+                                    </form>
+                                </div>
+                                <br>
+                            {% endfor %}
+                        {% else %}
+                            <h5>You don't have any equipment!</a></h5>
+                        {% endif %}
+                    </div>
                 </div>
-            {% endfor %}
-        {% else %}
-            <h5>Get started by adding gear from the list below, or <a href="{% url 'equipment_create' %}">adding your own</a></h5>
-        {% endif %}
-    </div>
+            </div>
+        </div>
 
-
-    <div class="current-gear">
-        <h1>Available Gear</h1>
-        {% if equipments.count %}
-            {% for equipment in equipments %}
-                <div>
-                    <form action="{% url 'assoc_equipment' equipment.id %}" method="post">
-                        {% csrf_token %}
-                        <button class="list-group-item list-group-item-action list-group-item-primary"> Add {{ equipment.get_type_display}} {{ equipment.model }} to your gear</button>
-                    </form>
+        <div class="col-4">
+            <div class="col grid-margin stretch-card">
+                <div class="card" id="equip-card">
+                    <div class="card-body">
+                        <h1>Available Equipment</h1>
+                        <hr>
+                        <div class="col-6">
+                            <a href="{% url 'equipment_create' %}" class="btn btn-primary" ><i class="fas fa-circle-plus"></i> Add Equipment</a>
+                        </div>
+                        <br>
+                        {% if equipments.count %}
+                        <p>Click to add to your equipment list</p>
+                            {% for equipment in equipments %}
+                                <div>
+                                    <form action="{% url 'assoc_equipment' equipment.id %}" method="post">
+                                        {% csrf_token %}
+                                        <button class="list-group-item list-group-item-action add-equip-btn"> Add {{ equipment.get_type_display}} {{ equipment.model }} to your equipment. <i class="fas fa-circle-plus" style="float: right"></i> </button>
+                                    </form>
+                                </div>
+                                <br>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
-            {% endfor %}
-        {% else %}
-            <h5><a href="{% url 'equipment_create' %}">Add Equipment</a></h5>
-        {% endif %}
+            </div>
+        </div>
     </div>
 </div>
-    <a href="{% url 'equipment_create' %}">Add Equipment</a>
+
 {% endblock %}
